@@ -1,49 +1,61 @@
 <template>
   <ion-page>
-    <ion-header :translucent="true">
+    <ion-header>
       <ion-toolbar>
-        <ion-title>Inbox</ion-title>
+        <ion-title>Contacts</ion-title>
       </ion-toolbar>
     </ion-header>
-
-    <ion-content :fullscreen="true">
-      <ion-refresher slot="fixed" @ionRefresh="refresh($event)">
-        <ion-refresher-content></ion-refresher-content>
-      </ion-refresher>
-
-      <ion-header collapse="condense">
-        <ion-toolbar>
-          <ion-title size="large">Inbox</ion-title>
-        </ion-toolbar>
-      </ion-header>
-
+    <ion-content>
+      <ion-searchbar v-model="searchQuery"></ion-searchbar>
       <ion-list>
-        <MessageListItem v-for="message in messages" :key="message.id" :message="message" />
+        <ion-item v-for="contact in filteredContacts" :key="contact.id" :router-link="`/${contact.id}`">
+          <ion-label>
+            <h2>{{ contact.name }}</h2>
+            <p>{{ contact.email }}</p>
+          </ion-label>
+          <ion-button slot="end" color="danger" @click="deleteContact(contact.id)">
+            Supprimer
+          </ion-button>
+        </ion-item>
       </ion-list>
+
+      <ion-fab vertical="bottom" horizontal="end">
+        <ion-fab-button :router-link="'/create'">
+          <ion-icon name="add"></ion-icon>
+        </ion-fab-button>
+      </ion-fab>
     </ion-content>
   </ion-page>
 </template>
+<script>
+import { ref, computed } from 'vue';
 
-<script setup lang="ts">
-import {
-  IonContent,
-  IonHeader,
-  IonList,
-  IonPage,
-  IonRefresher,
-  IonRefresherContent,
-  IonTitle,
-  IonToolbar,
-} from '@ionic/vue';
-import MessageListItem from '@/components/MessageListItem.vue';
-import { getMessages, Message } from '@/data/messages';
-import { ref } from 'vue';
+export default {
+  name: 'HomePage',
+  setup() {
+    const contacts = ref([]);
+    const searchQuery = ref('');
 
-const messages = ref<Message[]>(getMessages());
+    if (localStorage.getItem('contacts')) {
+      contacts.value = JSON.parse(localStorage.getItem('contacts'));
+    }
 
-const refresh = (ev: CustomEvent) => {
-  setTimeout(() => {
-    ev.detail.complete();
-  }, 3000);
+    const filteredContacts = computed(() => {
+      return contacts.value.filter(contact =>
+        contact.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+      );
+    });
+
+    const deleteContact = (id) => {
+      contacts.value = contacts.value.filter(contact => contact.id !== id);
+      localStorage.setItem('contacts', JSON.stringify(contacts.value));
+    };
+
+    return {
+      searchQuery,
+      filteredContacts,
+      deleteContact
+    };
+  }
 };
 </script>
